@@ -232,6 +232,36 @@ class CommonData(object):
                        'symmetrixId': array,
                        'numSnapVXSnapshots': 1}]
 
+    sg_expand_payload_multi_site = {
+        'editStorageGroupActionParam': {
+            'expandStorageGroupParam': {
+                'addSpecificVolumeParam': {
+                    'volumeId': [
+                        '00123'
+                    ],
+                    'remoteSymmSGInfoParam': {
+                        'remote_symmetrix_2_id': remote_array2,
+                        'remote_symmetrix_1_id': remote_array,
+                        'remote_symmetrix_1_sgs': [
+                            storagegroup_name
+                        ],
+                        'remote_symmetrix_2_sgs': [
+                            storagegroup_name
+                        ]}}}}}
+
+    sg_expand_payload_basic_srdf = {
+        'editStorageGroupActionParam': {
+            'expandStorageGroupParam': {
+                'addSpecificVolumeParam': {
+                    'volumeId': [
+                        '00123'
+                    ],
+                    'remoteSymmSGInfoParam': {
+                        'remote_symmetrix_1_id': remote_array,
+                        'remote_symmetrix_1_sgs': [
+                            storagegroup_name
+                        ]}}}}}
+
     sg_details_migration = [{'targetArray': remote_array,
                              'sourceArray': array,
                              'totalCapacity': 8.0,

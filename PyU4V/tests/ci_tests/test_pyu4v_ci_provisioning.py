@@ -3144,3 +3144,27 @@ class CITestProvisioning(base.TestBaseTestCase, testtools.TestCase):
         self.assertIn('dir_port', connection)
         self.assertIn(constants.LOGGED_IN, connection)
         self.assertIn(constants.ON_FABRIC, connection)
+
+    def test_add_existing_volume_to_storage_group_srdf(self):
+        """Test add_existing_volume_to_storage_group."""
+        volume_name = self.generate_name()
+        storage_group_name, srdf_group_number, local_volume, remote_volume = (
+            self.create_rdf_sg())
+        temp_storage_group_name = self.create_empty_storage_group()
+        device_id = (
+            self.provisioning.create_volume_from_storage_group_return_id(
+                volume_name, temp_storage_group_name, '1'))
+        time.sleep(10)
+        self.provisioning.remove_volume_from_storage_group(
+            storage_group_id=temp_storage_group_name, vol_id=device_id)
+        self.provisioning.add_existing_volume_to_storage_group(
+            storage_group_id=storage_group_name, vol_ids=device_id,
+            remote_array_1_id=self.conn.remote_array,
+            remote_array_1_sgs=storage_group_name)
+        vol_list = self.provisioning.get_volumes_from_storage_group(
+            storage_group_id=storage_group_name)
+        self.provisioning.delete_storage_group(temp_storage_group_name)
+        self.assertIn(device_id, vol_list)
+        self.assertEqual(2, len(vol_list))
+        vol_details = self.provisioning.get_volume(device_id)
+        self.assertEqual('RDF1+TDEV', vol_details.get('type'))

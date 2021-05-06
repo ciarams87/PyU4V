@@ -32,6 +32,8 @@ RESTORE = constants.RESTORE
 RESUME = constants.RESUME
 SETBIAS = constants.SETBIAS
 SETMODE = constants.SETMODE
+ENABLECONSISTENCY = constants.ENABLECONSISTENCY
+DISABLECONSISTENCY = constants.DISABLECONSISTENCY
 SPLIT = constants.SPLIT
 SUSPEND = constants.SUSPEND
 SWAP = constants.SWAP
@@ -490,7 +492,7 @@ class ReplicationFunctions(object):
     def modify_storage_group_snapshot(
             self, src_storage_grp_id, tgt_storage_grp_id, snap_name,
             link=False, unlink=False, restore=False, new_name=None,
-            gen_num=0, _async=False):
+            gen_num=0, _async=False, relink=False):
         """Modify a storage group snapshot.
 
         This is for arrays with microcode less than 5978.669.669.
@@ -509,6 +511,7 @@ class ReplicationFunctions(object):
         :param new_name: new name for the snapshot -- str
         :param gen_num: generation number -- int
         :param _async: if call should be async -- bool
+        :param relink: relink action required -- bool
         :returns: modified storage group snapshot details -- dict
         """
         payload = dict()
@@ -524,6 +527,9 @@ class ReplicationFunctions(object):
         elif new_name:
             payload = ({'rename': {'newSnapshotName': new_name},
                         'action': 'Rename'})
+        elif relink:
+            payload = ({'action': 'Relink', 'relink': {
+                'relinkStorageGroupName': tgt_storage_grp_id}})
         if _async:
             payload.update(ASYNC_UPDATE)
         return self.modify_resource(
@@ -537,7 +543,7 @@ class ReplicationFunctions(object):
     def modify_storage_group_snapshot_by_snap_id(
             self, src_storage_grp_id, tgt_storage_grp_id, snap_name,
             snap_id, link=False, unlink=False, restore=False, new_name=None,
-            _async=False):
+            _async=False, relink=False):
         """Modify a storage group snapshot using it's snap id.
 
         Snap ids are only available on microcode 5978.669.669
@@ -555,6 +561,7 @@ class ReplicationFunctions(object):
         :param restore: restore action required -- bool
         :param new_name: new name for the snapshot -- str
         :param _async: if call should be async -- bool
+        :param relink: relink action required -- bool
         :returns: modified storage group snapshot details -- dict
         """
         payload = dict()
@@ -570,6 +577,9 @@ class ReplicationFunctions(object):
         elif new_name:
             payload = ({'rename': {'new_snapshot_name': new_name},
                         'action': 'Rename'})
+        elif relink:
+            payload = ({'action': 'Relink', 'relink': {
+                'storage_group_name': tgt_storage_grp_id}})
         if _async:
             payload.update(ASYNC_UPDATE)
         return self.modify_resource(
@@ -1093,11 +1103,12 @@ class ReplicationFunctions(object):
 
         This may be a long running task depending on the size of the SRDF
         group, can switch to async call if required. Available actions are
-        'Establish', 'Split', 'Suspend', 'Restore', 'Resume', 'Failover',
-        'Failback', 'Swap', 'SetBias', and 'SetMode'.
-
+        'Establish', 'EnableConsistency', 'DisableConsistency', 'Split',
+        'Suspend', 'Restore', 'Resume', 'Failover', 'Failback', 'Swap',
+        'SetBias', and 'SetMode'.
         :param storage_group_id: storage group id -- str
-        :param action: the rdf action --str
+        :param action: the rdf action, note enable/disable consistency
+                       feature requires Unisphere 9.2.1.6 or higher -- str
         :param srdf_group_number: srdf group number -- int
         :param options: srdf options e.g.
                         {setMode': {'mode': 'Asynchronous'}} -- dict
@@ -1108,7 +1119,8 @@ class ReplicationFunctions(object):
             'ESTABLISH': ESTABLISH, 'SPLIT': SPLIT, 'SUSPEND': SUSPEND,
             'RESTORE': RESTORE, 'RESUME': RESUME, 'FAILOVER': FAILOVER,
             'FAILBACK': FAILBACK, 'SWAP': SWAP, 'SETBIAS': SETBIAS,
-            'SETMODE': SETMODE}
+            'SETMODE': SETMODE, 'DISABLECONSISTENCY': DISABLECONSISTENCY,
+            'ENABLECONSISTENCY': ENABLECONSISTENCY}
         srdf_action = srdf_actions.get(action.upper())
 
         if srdf_action:
@@ -1123,11 +1135,12 @@ class ReplicationFunctions(object):
             payload.update(ASYNC_UPDATE)
         if options and action:
             payload.update(options)
+
         return self.modify_resource(
-            category=REPLICATION,
-            resource_level=SYMMETRIX, resource_level_id=self.array_id,
-            resource_type=STORAGEGROUP, resource_type_id=storage_group_id,
-            resource=RDFG, resource_id=srdf_group_number, payload=payload)
+            category=REPLICATION, resource_level=SYMMETRIX,
+            resource_level_id=self.array_id, resource_type=STORAGEGROUP,
+            resource_type_id=storage_group_id, resource=RDFG,
+            resource_id=srdf_group_number, payload=payload)
 
     @decorators.refactoring_notice(
         'ReplicationFunctions', 'suspend_storage_group_srdf', 9.1, 10.0)
@@ -1313,25 +1326,21 @@ class ReplicationFunctions(object):
         self.delete_storage_group_srdf(storagegroup_id, rdfg_num)
 
     def delete_storage_group_srdf(
-            self, storage_group_id, srdf_group_number=None):
+            self, storage_group_id, srdf_group_number, filters=None):
         """Delete srdf pairings for a given storage group.
 
         :param storage_group_id: storage group id -- str
         :param srdf_group_number: srdf group number -- int
+        :param filters: optional boolean filters, half_delete,hop2, force,
+                        symforce, star, bypass, keepR1, keepR2,
+                        usage example filters={'keepR1': 'true'} -- dict
         :returns: storage group rdf details -- dict
         """
-        # Get a list of SRDF groups for storage group
-        if not srdf_group_number:
-            srdf_group_number = self.get_storagegroup_srdfg_list(
-                storage_group_id)
-        if not isinstance(srdf_group_number, list):
-            srdf_group_number = [srdf_group_number]
-        for srdfg in srdf_group_number:
-            self.delete_resource(
-                category=REPLICATION,
-                resource_level=SYMMETRIX, resource_level_id=self.array_id,
-                resource_type=STORAGEGROUP, resource_type_id=storage_group_id,
-                resource=RDFG, resource_id=srdfg)
+        self.delete_resource(
+            category=REPLICATION, resource_level=SYMMETRIX,
+            resource_level_id=self.array_id, resource_type=STORAGEGROUP,
+            resource_type_id=storage_group_id, resource=RDFG,
+            resource_id=srdf_group_number, params=filters)
 
     def get_rdf_director_list(self, array_id=None, filters=None):
         """Finds out directors configured for SRDF on the specified array.

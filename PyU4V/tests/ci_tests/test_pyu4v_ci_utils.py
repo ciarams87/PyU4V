@@ -509,3 +509,9 @@ class CITestUtils(base.TestBaseTestCase, testtools.TestCase):
         self.assertRaises(
             exception.InvalidInputException,
             time_handler.format_time_input, 123, True, True)
+
+    def test_iscsi_regex(self):
+        import re
+        iqn = 'SE-1F:000:iqn.1994-05.com.redhat:338fa4db18b5'
+        result = re.match(constants.iscsi_initiator_pattern, iqn)
+        self.assertTrue(result)

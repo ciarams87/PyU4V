@@ -190,6 +190,7 @@ class TestBaseTestCase(testtools.TestCase):
             srdf_pair_create_success, srdf_pair_create_cnt = False, 0
             while not srdf_pair_create_success and srdf_pair_create_cnt <= 3:
                 try:
+                    srdf_pair_create_cnt +=1
                     job = self.replication.create_storage_group_srdf_pairings(
                         storage_group_id=sg_name,
                         remote_sid=self.conn.remote_array,
@@ -243,13 +244,13 @@ class TestBaseTestCase(testtools.TestCase):
             self.replication.get_storage_group_srdf_details(
                 storage_group_id=sg_name, rdfg_num=srdf_group_number).get(
                 'states'))
-        if 'Synchronized' in current_rdf_state_list:
+        if 'Synchronized' or 'Consistent' in current_rdf_state_list:
             self.replication.suspend_storage_group_srdf(
                 storage_group_id=sg_name, srdf_group_number=srdf_group_number)
         local_volume_list = self.provision.get_volumes_from_storage_group(
             sg_name)
         self.replication.delete_storage_group_srdf(
-            storage_group_id=sg_name)
+            storage_group_id=sg_name, srdf_group_number=srdf_group_number)
         self.provision.delete_storage_group(storage_group_id=sg_name)
         for local_volume in local_volume_list:
             self.provision.delete_volume(device_id=local_volume)

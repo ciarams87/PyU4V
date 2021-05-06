@@ -39,7 +39,7 @@ APP_OCT = 'application/octet-stream'
 APP_MPART = 'multipart/form-data'
 
 # Unisphere REST URI constants
-PYU4V_VERSION = '9.2.1.3'
+PYU4V_VERSION = '9.2.1.4'
 UNISPHERE_VERSION = '92'
 VERSION = 'version'
 ITERATOR = 'Iterator'
@@ -106,6 +106,8 @@ CREATE_VOL_STRING = 'Creating new Volumes'
 # Replication Modes
 ASYNCHRONOUS_CC = 'Asynchronous'
 ADAPTIVE_COPY = 'AdaptiveCopyDisk'
+DISABLECONSISTENCY = 'DisableConsistency'
+ENABLECONSISTENCY = 'EnableConsistency'
 ESTABLISH = 'Establish'
 FAILBACK = 'Failback'
 FAILOVER = 'Failover'
@@ -260,19 +262,18 @@ FCID = 'fcid'
 
 # Regex search pattern constants
 DIRECTOR_SEARCH_PATTERN = '\\w{2}-\\w{2}'
-PORT_SEARCH_PATTERN = '\\w{1,2}'
+PORT_SEARCH_PATTERN = '\\d{1,3}'
 WWN_SEARCH_PATTERN_16 = '[0-9a-fA-F]{16}'
 WWN_SEARCH_PATTERN_32 = '[0-9a-fA-F]{32}'
 ISCSI_IQN_SEARCH_PATTERN = (
-    '^iqn.\\d{4}-\\d{2}.(?:com|org).\\w{1,}:(?:\\d{2}:)*'
-    '[0-9a-fA-F]{1,32}$')
+    '^iqn.\\d{1,4}-\\d{2}.(?:com|org).\\w{1,}:(?:\\d{2}:)*'
+    '[0-9a-fA-F]{1,32}$||.[0-9A-Fa-f]{16}')
 non_iscsi_initiator_pattern = '{d}:{p}:{w}'.format(
     d=DIRECTOR_SEARCH_PATTERN, p=PORT_SEARCH_PATTERN,
     w=WWN_SEARCH_PATTERN_16)
-iscsi_initiator_pattern = '{d}:{pa}'.format(
-    d=DIRECTOR_SEARCH_PATTERN,
-    pa='\\d{3}:iqn.\\d{4}-\\d{2}.(?:com|org).'
-       '\\w{1,}:\\d{2}:[0-9a-fA-F]{1,32}')
+iscsi_initiator_pattern = '{d}:{p}:{pa}'.format(
+    d=DIRECTOR_SEARCH_PATTERN, p=PORT_SEARCH_PATTERN,
+    pa=ISCSI_IQN_SEARCH_PATTERN)
 INITIATOR_SEARCH_PATTERN = '{ni}|{i}'.format(
     ni=non_iscsi_initiator_pattern, i=iscsi_initiator_pattern)
 

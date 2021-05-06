@@ -207,6 +207,28 @@ class CITestReplication(base.TestBaseTestCase, testtools.TestCase):
             snap_name=snap_name, gen_num=0, unlink=True)
         self.provisioning.delete_storage_group(storage_group_id=target_sg)
 
+    def test_modify_storage_group_snap_relink(self):
+        """Test to cover relink snapshot."""
+        snapshot_info, sg_name = self.create_sg_snapshot()
+        target_sg = "{sg}_lnk".format(sg=sg_name)
+        snap_name = snapshot_info.get('name')
+        self.replication.modify_storage_group_snapshot(
+            src_storage_grp_id=sg_name, tgt_storage_grp_id=target_sg,
+            snap_name=snap_name, gen_num=0, link=True)
+        snap_details = self.replication.get_snapshot_generation_details(
+            sg_id=sg_name, snap_name=snap_name, gen_num=0)
+        self.assertEqual(True, snap_details.get('isLinked'))
+        self.replication.modify_storage_group_snapshot(
+            src_storage_grp_id=sg_name, tgt_storage_grp_id=target_sg,
+            snap_name=snap_name, gen_num=0, relink=True)
+        relink_snap_details = self.replication.get_snapshot_generation_details(
+            sg_id=sg_name, snap_name=snap_name, gen_num=0)
+        self.assertEqual(True, relink_snap_details.get('isLinked'))
+        self.replication.modify_storage_group_snapshot(
+            src_storage_grp_id=sg_name, tgt_storage_grp_id=target_sg,
+            snap_name=snap_name, gen_num=0, unlink=True)
+        self.provisioning.delete_storage_group(storage_group_id=target_sg)
+
     def test_modify_storage_group_snap_link_by_snap_id(self):
         """Test to cover link snapshot by snap id."""
         snapshot_info, sg_name = self.create_sg_snapshot()
@@ -218,6 +240,26 @@ class CITestReplication(base.TestBaseTestCase, testtools.TestCase):
         snap_details = self.replication.get_snapshot_snap_id_details(
             sg_name, snap_name, snap_id)
         self.assertTrue(snap_details.get('linked'))
+        self.replication.modify_storage_group_snapshot_by_snap_id(
+            sg_name, target_sg, snap_name, snap_id, unlink=True)
+        self.provisioning.delete_storage_group(target_sg)
+
+    def test_modify_storage_group_snap_relink_by_snap_id(self):
+        """Test to cover relink snapshot by snap id."""
+        snapshot_info, sg_name = self.create_sg_snapshot()
+        target_sg = "{sg}_lnk".format(sg=sg_name)
+        snap_name = snapshot_info.get('name')
+        snap_id = snapshot_info.get('snapid')
+        self.replication.modify_storage_group_snapshot_by_snap_id(
+            sg_name, target_sg, snap_name, snap_id, link=True)
+        snap_details = self.replication.get_snapshot_snap_id_details(
+            sg_name, snap_name, snap_id)
+        self.assertTrue(snap_details.get('linked'))
+        self.replication.modify_storage_group_snapshot_by_snap_id(
+            sg_name, target_sg, snap_name, snap_id, relink=True)
+        relink_snap_details = self.replication.get_snapshot_snap_id_details(
+            sg_name, snap_name, snap_id)
+        self.assertTrue(relink_snap_details.get('linked'))
         self.replication.modify_storage_group_snapshot_by_snap_id(
             sg_name, target_sg, snap_name, snap_id, unlink=True)
         self.provisioning.delete_storage_group(target_sg)
@@ -810,3 +852,21 @@ class CITestReplication(base.TestBaseTestCase, testtools.TestCase):
         self.assertIn(srdf_group_number, sg_rdfg_list)
         self.provisioning.delete_storage_group(
             storage_group_id='ci_new_srdf_delete')
+
+    def test_modify_storage_group_srdf_set_consistency_enable(self):
+        """Test test_modify_storage_group_srdf to enable consistency."""
+        sg_name, srdf_group_number, local_volume, remote_volume = (
+            self.create_rdf_sg())
+        self.replication.modify_storage_group_srdf(
+            storage_group_id=sg_name, action='setmode',
+            srdf_group_number=srdf_group_number,
+            options={'setMode': {'mode': 'Asynchronous'}})
+        status = self.replication.modify_storage_group_srdf(
+            storage_group_id=sg_name, srdf_group_number=srdf_group_number,
+            action="EnableConsistency")
+        self.assertEqual('Enabled', status.get('consistency_protection'))
+        disable_status = self.replication.modify_storage_group_srdf(
+            storage_group_id=sg_name, srdf_group_number=srdf_group_number,
+            action="DisableConsistency")
+        self.assertEqual(
+            'Disabled', disable_status.get('consistency_protection'))

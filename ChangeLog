@@ -1,5 +1,19 @@
 PyU4V Change Log
 ================
+version 9.2.1.4
+- added enable/disable consistency feature to modify_storage_group_srdf
+  function in replication
+- Updated add_existing_volume_to_storage_group to create RDF pairings.
+- made srdfg number mandatory in delete_storage_group_srdf, added filters
+  options, removed unit test test_delete_storagegroup_srdf_no_number
+- updated constants file ISCSI_IQN_SEARCH_PATTERN = (
+    '^iqn.\\d{1,4}-\\d{2}.(?:com|org).\\w{1,}:(?:\\d{2}:)*'
+    '[0-9a-fA-F]{1,32}$||.[0-9A-Fa-f]{16}')
+    added test to ci_utils.py test_iscsi_regex
+- added relink to modify_storage_group_snapshot and
+  modify_storage_group_snapshot_snapsetid
+
+
 version 9.2.1.3
 - added enable_mobility id to provisioning functions create_storage_group,
   add_new_volume_to_storage_group, create_volume_from_storage_group_return_id

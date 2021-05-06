@@ -1774,13 +1774,27 @@ class ProvisioningFunctions(object):
         return self.add_existing_volume_to_storage_group(
             sg_id, vol_ids, _async)
 
-    def add_existing_volume_to_storage_group(self, storage_group_id, vol_ids,
-                                             _async=False):
+    def add_existing_volume_to_storage_group(
+            self, storage_group_id, vol_ids, _async=False,
+            remote_array_1_id=None, remote_array_1_sgs=None,
+            remote_array_2_id=None, remote_array_2_sgs=None):
         """Expand an existing storage group by adding existing volumes.
 
         :param storage_group_id: storage group id -- str
         :param vol_ids: volume device id(s) -- str or list
         :param _async: if call should be async -- bool
+        :param remote_array_1_id: 12 digit serial number of remote array,
+                                  optional -- str
+        :param remote_array_1_sgs: list of storage groups on remote array to
+                                   add Remote device, Unisphere instance must
+                                   be local to R1 storage group otherwise
+                                   volumes will only be added to the local
+                                   group -- str or list
+        :param remote_array_2_id: optional digit serial number of remote array,
+                                  only used in multihop SRDF, e.g. R11, or
+                                  R1 - R21 - R2 optional -- str
+        :param remote_array_2_sgs: storage groups on remote array, optional
+                                   -- str or list
         :returns: storage group details -- dict
         """
         if not isinstance(vol_ids, list):
@@ -1789,8 +1803,29 @@ class ProvisioningFunctions(object):
             'expandStorageGroupParam': {
                 'addSpecificVolumeParam': {
                     'volumeId': vol_ids}}}}
+
         if _async:
             add_vol_data.update(ASYNC_UPDATE)
+
+        if remote_array_1_id and remote_array_1_sgs:
+            if not isinstance(remote_array_1_sgs, list):
+                remote_array_1_sgs = [remote_array_1_sgs]
+            add_vol_data['editStorageGroupActionParam'][
+                'expandStorageGroupParam']['addSpecificVolumeParam'].update(
+                    {'remoteSymmSGInfoParam': {
+                        'remote_symmetrix_1_id': remote_array_1_id,
+                        'remote_symmetrix_1_sgs': remote_array_1_sgs}})
+            if remote_array_2_id and remote_array_2_sgs:
+                if not isinstance(remote_array_2_sgs, list):
+                    remote_array_2_sgs = [remote_array_2_sgs]
+                add_vol_data['editStorageGroupActionParam'][
+                    'expandStorageGroupParam'][
+                        'addSpecificVolumeParam'].update(
+                            {'remoteSymmSGInfoParam': {
+                                'remote_symmetrix_1_id': remote_array_1_id,
+                                'remote_symmetrix_1_sgs': remote_array_1_sgs,
+                                'remote_symmetrix_2_id': remote_array_2_id,
+                                'remote_symmetrix_2_sgs': remote_array_2_sgs}})
         return self.modify_storage_group(storage_group_id, add_vol_data)
 
     @decorators.refactoring_notice(

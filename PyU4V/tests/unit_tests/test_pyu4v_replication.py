@@ -327,6 +327,16 @@ class PyU4VReplicationTest(testtools.TestCase):
                 _async=True)
             mock_mod.assert_called_once()
 
+    def test_relink_snapshot_by_snap_id(self):
+        """Test relink_snapshot_by_snap_id."""
+        with mock.patch.object(
+                self.replication, 'modify_resource') as mock_mod:
+            self.replication.modify_storage_group_snapshot_by_snap_id(
+                self.data.storagegroup_name, self.data.target_group_name,
+                self.data.group_snapshot_name, self.data.sg_snap_id,
+                relink=True)
+            mock_mod.assert_called_once()
+
     def test_unlink_gen_snapshot(self):
         """Test unlink_gen_snapshot."""
         with mock.patch.object(
@@ -586,20 +596,8 @@ class PyU4VReplicationTest(testtools.TestCase):
                 resource_level_id=self.data.array,
                 resource_type='storagegroup',
                 resource_type_id=self.data.storagegroup_name,
-                resource='rdf_group', resource_id=self.data.rdf_group_no)
-
-    def test_delete_storagegroup_srdf_no_number(self):
-        """Test delete_storagegroup_srdf."""
-        with mock.patch.object(
-                self.replication, 'delete_resource') as mock_delete:
-            self.replication.delete_storagegroup_srdf(
-                self.data.storagegroup_name)
-            mock_delete.assert_called_once_with(
-                category='replication', resource_level='symmetrix',
-                resource_level_id=self.data.array,
-                resource_type='storagegroup',
-                resource_type_id=self.data.storagegroup_name,
-                resource='rdf_group', resource_id=self.data.rdf_group_no)
+                resource='rdf_group', resource_id=self.data.rdf_group_no,
+                params=None)
 
     def test_create_rdf_group(self):
         """Test create_rdf_group."""
